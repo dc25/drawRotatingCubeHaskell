@@ -251,14 +251,9 @@ view model =
                                  ) $ viewModel model
         return never
 
-applyRotation :: Matrix Float -> Matrix Float -> Matrix Float
-applyRotation rotationMatrix  prevOrientation = 
-    prevOrientation `multStd2` rotationMatrix
-
 rotateModel rotationMatrix model = 
-    model { orientation = applyRotation rotationMatrix $ orientation model }
+    model { orientation = orientation model `multStd2` rotationMatrix }
 
--- | FRP style update function. Given action and model, return updated model.
 update :: Action -> Model -> Model
 update action model = 
     case action of
