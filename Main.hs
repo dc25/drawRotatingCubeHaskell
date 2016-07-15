@@ -77,9 +77,7 @@ perspectiveMatrix =
 
 viewScale = 500
 
-data FaceViewKit = FaceViewKit { transform :: Matrix Float }
-
-type ViewKitCollection = Map Color FaceViewKit
+type ViewKitCollection = Map Color (Matrix Float)
 
 -- | Namespace needed for svg elements.
 svgNamespace = Just "http://www.w3.org/2000/svg"
@@ -92,15 +90,15 @@ transformPoints transform points =
 
 pointsToString :: [(Float,Float)] -> String
 pointsToString = concatMap (\(x,y) -> show x ++ ", " ++ show y ++ " ") 
-showFacetRectangle :: MonadWidget t m => Float -> Float -> Float -> Float -> Color -> Dynamic t FaceViewKit -> m (Dynamic t FaceViewKit)
+showFacetRectangle :: MonadWidget t m => Float -> Float -> Float -> Float -> Color -> Dynamic t (Matrix Float) -> m (Dynamic t (Matrix Float))
 showFacetRectangle x0 y0 x1 y1 faceColor dFaceViewKit = do
     let points = fromLists [[x0,y0,0,1],[x0,y1,0,1],[x1,y1,0,1],[x1,y0,0,1]]
     dAttrs <- mapDyn (\fvk -> "fill" =: show faceColor  <> 
-                              "points" =: pointsToString (transformPoints (transform fvk) points))  dFaceViewKit
+                              "points" =: pointsToString (transformPoints fvk points))  dFaceViewKit
     (el,_) <- elDynAttrNS' svgNamespace "polygon" dAttrs $ return ()
     return dFaceViewKit
 
-showFacetSquare :: MonadWidget t m => Int -> Int -> Color -> Float -> Dynamic t FaceViewKit -> m (Dynamic t FaceViewKit)
+showFacetSquare :: MonadWidget t m => Int -> Int -> Color -> Float -> Dynamic t (Matrix Float) -> m (Dynamic t (Matrix Float))
 showFacetSquare x y faceColor margin dFaceViewKit = do
     let x0 = fromIntegral x + margin
         y0 = fromIntegral y + margin
@@ -108,7 +106,7 @@ showFacetSquare x y faceColor margin dFaceViewKit = do
         y1 = y0 + 1 - 2 * margin
     showFacetRectangle x0 y0 x1 y1 faceColor dFaceViewKit
 
-showFace :: MonadWidget t m => Color -> Dynamic t FaceViewKit -> m (Event t Action)
+showFace :: MonadWidget t m => Color -> Dynamic t (Matrix Float) -> m (Event t Action)
 showFace faceColor dFaceViewKit = do  
     showFacetSquare 0 0 Black 0 dFaceViewKit
     showFacetSquare 0 0 faceColor 0.05 dFaceViewKit
@@ -202,7 +200,7 @@ viewTransformation model@(Model orientation ) faceColor =
         isFacingCamera = facingCamera [0,0,-1] modelTransform
     in (modelTransform, isFacingCamera)
 
-viewKit :: Model -> Color -> (Bool, FaceViewKit)
+viewKit :: Model -> Color -> (Bool, Matrix Float)
 viewKit model@(Model orientation ) faceColor = 
     let (modelTransform, isFacingCamera) 
             = viewTransformation model faceColor 
@@ -220,7 +218,7 @@ viewKit model@(Model orientation ) faceColor =
                         `multStd2` viewScaleMatrix
                         `multStd2` viewTranslationMatrix
 
-    in (isFacingCamera, FaceViewKit viewTransform)
+    in (isFacingCamera, viewTransform)
 
 kitmapUpdate :: Model -> ViewKitCollection -> Color -> ViewKitCollection
 kitmapUpdate model prevMap faceColor = 
@@ -255,19 +253,15 @@ rotateModel rotationMatrix model =
     model { orientation = orientation model `multStd2` rotationMatrix }
 
 update :: Action -> Model -> Model
-update action model = 
-    case action of
-        Animate -> 
-            let step = pi/20
-            in rotateModel (zxRotationMatrix (-pi/20) ) model
+update _ model = 
+    rotateModel (zxRotationMatrix (-pi/20) ) model
 
 main = mainWidget $ do 
     let initialOrientation =             zxRotationMatrix (3*pi/4) 
                               `multStd2` yzRotationMatrix (pi/4)
         dt = 0.1
 
-    now <- liftIO getCurrentTime
-    tick <- tickLossy dt now
+    tick <- tickLossy dt =<< liftIO getCurrentTime
     let advanceAction = fmap (const Animate) tick
     rec
         view model
