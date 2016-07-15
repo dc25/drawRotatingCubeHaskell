@@ -1,6 +1,5 @@
 module View (view, insideFacesCamera) where
 
-
 import Reflex.Dom ( MonadWidget ,Dynamic ,Event ,EventName(Click) ,attachWith ,button ,constDyn ,current ,domEvent ,el ,elAttr ,elDynAttrNS' ,leftmost ,listWithKey ,mapDyn ,switch ,never ,(=:) ,(&))
 
 import Data.Map as DM (Map, lookup, insert, empty, fromList, elems)
@@ -71,15 +70,11 @@ advance adv dFaceViewKit = do
     let updateViewKit advancer prevViewKit = prevViewKit { face = advancer $ face prevViewKit }
     mapDyn (updateViewKit adv) dFaceViewKit
 
--- pain point how do I get the compiler to tell me what the type sig for
--- this function should be.
 showAndAdvance :: MonadWidget t m => Int -> Int -> (Facet -> Facet) -> Dynamic t FaceViewKit -> m (Dynamic t FaceViewKit)
 showAndAdvance x y adv dFaceViewKit = do
     showFacet x y dFaceViewKit
     advance adv dFaceViewKit
 
--- pain point 
--- How do I do these repeated "east" operations as a fold (or something )
 showFace :: MonadWidget t m => Dynamic t FaceViewKit -> m (Event t Action)
 showFace lowerLeft = do  
     left <-       showAndAdvance 0 0 east lowerLeft   -- lower left
@@ -401,7 +396,6 @@ getLowerLeft centerFace =
         Just goLeft = DM.lookup (centerFaceColor, westFaceColor) leftDirs
     in (west.goLeft) centerFace
 
--- pain point : How do I make the order of display conditional
 viewModel :: MonadWidget t m => Dynamic t Model -> m (Event t Action)
 viewModel model = do
     bottomMap <-                    mapDyn bottomView model
@@ -410,32 +404,20 @@ viewModel model = do
     upperMiddleMap <-               mapDyn upperMiddleView model
     topMap <-                       mapDyn topView model
 
-    bottomEventsWithKeys <-         listWithKey bottomMap $ const showFace
-    lowerMiddleEventsWithKeys <-    listWithKey lowerMiddleMap $ const showLowerMiddleFace
-    middleMiddleEventsWithKeys <-   listWithKey middleMiddleMap $ const showMiddleMiddleFace
-    upperMiddleEventsWithKeys <-    listWithKey upperMiddleMap $ const showUpperMiddleFace
-    topEventsWithKeys <-            listWithKey topMap $ const showFace
+    listWithKey bottomMap $ const showFace
+    listWithKey lowerMiddleMap $ const showLowerMiddleFace
+    listWithKey middleMiddleMap $ const showMiddleMiddleFace
+    listWithKey upperMiddleMap $ const showUpperMiddleFace
+    listWithKey topMap $ const showFace
 
-    let topEvent = switch $ (leftmost . elems) <$> current topEventsWithKeys
-        bottomEvent = switch $ (leftmost . elems) <$> current bottomEventsWithKeys
-        lowerMiddleEvent = switch $ (leftmost . elems) <$> current lowerMiddleEventsWithKeys
-        middleMiddleEvent = switch $ (leftmost . elems) <$> current middleMiddleEventsWithKeys
-        upperMiddleEvent = switch $ (leftmost . elems) <$> current upperMiddleEventsWithKeys
-    return $ leftmost [topEvent, lowerMiddleEvent, middleMiddleEvent, upperMiddleEvent, bottomEvent]
-
-fps = "style" =: "float:left;padding:10px" 
-cps = "style" =: "float:clear" 
+    return never
 
 view :: MonadWidget t m => Dynamic t Model -> m (Event t Action)
 view model = 
     el "div" $ do
-        leftEv <-    fmap (const $ NudgeCube D.Left)  <$> elAttr "div" fps (button "left")
-        rightEv <-   fmap (const $ NudgeCube D.Right) <$> elAttr "div" fps (button "right")
-        upEv <-      fmap (const $ NudgeCube Up)    <$> elAttr "div" fps (button "up")
-        downEv <-    fmap (const $ NudgeCube Down)  <$> elAttr "div" fps (button "down")
         (_,ev) <-    elDynAttrNS' svgNamespace "svg" 
                        (constDyn $  "width" =: show viewScale
                                  <> "height" =: show viewScale
                                  ) $ viewModel model
-        return $ leftmost [ev, leftEv, rightEv, upEv, downEv]
+        return never
 
