@@ -1,7 +1,7 @@
 module View (view, insideFacesCamera) where
 
 
-import Reflex.Dom ( MonadWidget ,Dynamic ,Event ,EventName(Click) ,attachWith ,button ,constDyn ,current ,domEvent ,el ,elAttr ,elDynAttrNS' ,leftmost ,listWithKey ,mapDyn ,switch ,(=:) ,(&))
+import Reflex.Dom ( MonadWidget ,Dynamic ,Event ,EventName(Click) ,attachWith ,button ,constDyn ,current ,domEvent ,el ,elAttr ,elDynAttrNS' ,leftmost ,listWithKey ,mapDyn ,switch ,never ,(=:) ,(&))
 
 import Data.Map as DM (Map, lookup, insert, empty, fromList, elems)
 import Data.List (foldl, scanl,head)
@@ -15,7 +15,6 @@ import Rotation
 import Direction as D
 import Action
 import Color
-import TwistMode
 import Cube
 import Model
 
@@ -67,50 +66,6 @@ showFacet x y dFaceViewKit = do
     showFacetSquare x y 0.05 dFaceViewKit
     return dFaceViewKit
 
-arrow :: Matrix Float
-arrow = 
-    let hw = 0.35
-        base = -0.3
-        length = 0.6
-    in fromLists [[base, -hw, 0, 1], [base, hw, 0, 1], [base+length, 0, 0, 1]]
-
-arrowPoints :: (Rotation,Int) -> Matrix Float
-arrowPoints (rotation,index) = 
-    let cwRotations = [3*pi/2, pi, pi/2, 0]
-        cwTranslations = [(0.5,0.5,0)
-                         ,(0.5,2.5,0)
-                         ,(2.5,2.5,0)
-                         ,(2.5,0.5,0)
-                         ]
-
-        cwTransformations = zipWith multStd2 
-                              (fmap xyRotationMatrix cwRotations) 
-                              (fmap translationMatrix cwTranslations)
-
-        ccwRotations = [pi/2, 0, 3*pi/2, pi]
-        ccwTranslations = [(0.5,1.5,0)
-                          ,(1.5,2.5,0)
-                          ,(2.5,1.5,0)
-                          ,(1.5,0.5,0)
-                          ]
-
-        ccwTransformations = zipWith multStd2 
-                              (fmap xyRotationMatrix ccwRotations) 
-                              (fmap translationMatrix ccwTranslations)
-
-        transformations = if rotation == CW then cwTransformations else ccwTransformations
-        transform = transformations !! index
-    in arrow `multStd2` transform
-
-showArrow :: MonadWidget t m => (Rotation, Int) -> Dynamic t FaceViewKit -> m (Event t Action)
-showArrow arrowIndex@(rotation,_) dFaceViewKit = do
-    let points = arrowPoints arrowIndex
-    dFacet <- mapDyn face dFaceViewKit  
-    dAttrs <- mapDyn (\fvk -> "fill" =: "grey" <> 
-                              "points" =: pointsToString (transformPoints (transform fvk) points)) dFaceViewKit
-    (el,_) <- elDynAttrNS' svgNamespace "polygon" dAttrs $ return ()
-    return $ attachWith (\a _ -> RotateFace rotation a)  (current dFacet) $ domEvent Click el
-
 advance :: MonadWidget t m => (Facet -> Facet) -> Dynamic t FaceViewKit -> m (Dynamic t FaceViewKit)
 advance adv dFaceViewKit = do
     let updateViewKit advancer prevViewKit = prevViewKit { face = advancer $ face prevViewKit }
@@ -137,27 +92,7 @@ showFace lowerLeft = do
     center <-     showAndAdvance 1 0 south lower      -- lower
     _ <-          showFacet      1 1       center          
 
-    leftFace <-      advance (south.north) left
-    leftEv <-        showArrow (CCW,0) leftFace
-    leftCornerEv <-  showArrow (CW,0) leftFace
-
-    upperFace <-     advance (south.north) upper
-    upperEv <-       showArrow (CCW,1) upperFace
-    upperCornerEv <- showArrow (CW,1) upperFace
-
-    rightFace <-     advance (south.north) right
-    rightEv <-       showArrow (CCW,2) rightFace
-    rightCornerEv <- showArrow (CW,2) rightFace
-
-    lowerFace <-     advance (south.north) lower
-    lowerEv <-       showArrow (CCW,3) lowerFace
-    lowerCornerEv <- showArrow (CW,3) lowerFace
-
-    return $ leftmost [ leftEv , leftCornerEv 
-                      , upperEv , upperCornerEv 
-                      , rightEv , rightCornerEv 
-                      , lowerEv , lowerCornerEv 
-                      ]
+    return never
 
 showInside :: MonadWidget t m => Dynamic t FaceViewKit -> m (Dynamic t FaceViewKit)
 showInside dFaceViewKit = showFacetRectangle 0 0 3 3 =<< mapDyn (changeViewKitColor Maroon) dFaceViewKit 
@@ -168,16 +103,7 @@ showUpperMiddleFace upperRight = do
     upperLeft <-  showAndAdvance 1 2 west upper      
                     >>= showFacet 0 2                 
 
-    upperFace <-     advance (south.north) upper
-    upperCornerEv <- showArrow (CW,1) upperFace
-    upperEv <-       showArrow (CCW,1) upperFace
-
-    rightFace <-     advance (south.north.east) upperRight
-    rightCornerEv <- showArrow (CW,2) rightFace
-
-    return $ leftmost [ upperEv , upperCornerEv 
-                                , rightCornerEv 
-                      ]
+    return $ never
 
 
 showMiddleMiddleFace :: MonadWidget t m => Dynamic t FaceViewKit -> m (Event t Action)
@@ -189,16 +115,7 @@ showMiddleMiddleFace upperRight = do
     left <-       advance (south.west.south) upperRight
               >>= showFacet 0 1            
 
-    rightFace <-     advance (south.north) right
-    rightEv <-       showArrow (CCW,2) rightFace
-
-    leftFace <-      advance (south.north) left
-    leftEv <-        showArrow (CCW,0) leftFace
-
-
-    return $ leftmost [ leftEv 
-                      , rightEv 
-                      ]
+    return never
 
 showLowerMiddleFace :: MonadWidget t m => Dynamic t FaceViewKit -> m (Event t Action)
 showLowerMiddleFace lowerLeft = do  
@@ -206,16 +123,7 @@ showLowerMiddleFace lowerLeft = do
     lowerRight <-  showAndAdvance 1 0 west lower      
                     >>= showFacet 2 0                 
 
-    lowerFace <-     advance (south.north) lower
-    lowerCornerEv <- showArrow (CW,3) lowerFace
-    lowerEv <-       showArrow (CCW,3) lowerFace
-
-    leftFace <-     advance (south.north.east) lowerLeft
-    leftCornerEv <- showArrow (CW,0) leftFace
-
-    return $ leftmost [ lowerEv , lowerCornerEv 
-                                , leftCornerEv 
-                      ]
+    return never
 
 facingCamera :: [Float] -> Matrix Float -> Bool
 facingCamera viewPoint modelTransform =
