@@ -10,7 +10,7 @@ ghcjs_B7KLFJ07Vte3zPHAgRIBTb:11013
 ghcjs_D7BYGeMTlMGF2My8KZzKUS:152503
 ghcjs_Kc7TQ2cEDg1F5e5cgY2Vuk:9821
 integer-gmp:             42831
-main:                    84226
+main:                    83472
 matri_682HBa36TWs8HIx1KnWQ3t:31290
 primi_293YT17zdlWL9QJgnLTQSn:2385
 refle_BP42iAL8rA7IBOuWCaV0zs:399403
@@ -20,7 +20,7 @@ text_1ffW5NTi2SPHBcBuYSkgjk:19877
 these_6AzwGhJzfucJgGlyPQnsSR:2743
 time_KPHTSoBSjtZ5lswdMFwFfY:10375
 trans_KzbnBSIEqPI2eU1Inn4mzm:27894
-vecto_FNLwpzrmeRC6Ra1RihE2cq:71011
+vecto_FNLwpzrmeRC6Ra1RihE2cq:71013
 
 
 code size per module:
@@ -132,10 +132,9 @@ integer-gmp
 main
     Action:                             70
     Color:                              24872
-    Main:                               14193
+    Main:                               49774
     Matrices:                           8429
     Model:                              327
-    View:                               36335
 
 matri_682HBa36TWs8HIx1KnWQ3t
     Data.Matrix:                        31290
@@ -183,7 +182,7 @@ trans_KzbnBSIEqPI2eU1Inn4mzm
     Control.Monad.Trans.State.Strict:   9180
 
 vecto_FNLwpzrmeRC6Ra1RihE2cq
-    Data.Vector:                        8104
+    Data.Vector:                        8106
     Data.Vector.Fusion.Bundle:          300
     Data.Vector.Fusion.Bundle.Monadic:  4261
     Data.Vector.Fusion.Bundle.Size:     347
@@ -198,5 +197,5 @@ vecto_FNLwpzrmeRC6Ra1RihE2cq
 
 
 
-packed metadata: 407779
+packed metadata: 407918
 
