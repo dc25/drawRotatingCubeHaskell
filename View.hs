@@ -248,8 +248,8 @@ facingCamera viewPoint modelTransform =
         -- should be opposed to each other. 
     in cameraToPlane `dot` perpendicular < 0
 
-viewTransformation :: Model -> Facet -> Bool -> Float -> (Matrix Float, Bool)
-viewTransformation model@(Model topFace orientation twist twistMode) viewCenterFacet withTwist offset = 
+viewTransformation :: Model -> Facet -> Float -> (Matrix Float, Bool)
+viewTransformation model@(Model topFace orientation ) viewCenterFacet offset = 
     let faceColor = color viewCenterFacet 
         topColor = color topFace
 
@@ -362,13 +362,6 @@ viewTransformation model@(Model topFace orientation twist twistMode) viewCenterF
         Just (assembleMatricies,_) = DM.lookup faceColor assemblies 
         Just (postTwist,preTwist) = DM.lookup topColor assemblies 
 
-        twistMatricies = 
-            if withTwist && twist /= 0
-            then preTwist ++
-                 [ xyRotationMatrix (2*pi * twist/360) ] ++
-                 postTwist
-            else []
-
         -- scale down to fit in camera space
         scale3dMatrix = scaleMatrix (1/2)
 
@@ -378,7 +371,6 @@ viewTransformation model@(Model topFace orientation twist twistMode) viewCenterF
                                , offsetMatrix
                                ] ++ 
                                assembleMatricies ++ -- may be 0,1 or 2 matricies
-                               twistMatricies ++ -- may be 0 or up to 5 ( I think ) matricies
                                [ scale3dMatrix,
                                  orientation
                                ]
@@ -392,14 +384,14 @@ viewTransformation model@(Model topFace orientation twist twistMode) viewCenterF
 
 insideFacesCamera :: Model -> Facet -> Bool
 insideFacesCamera model facet = 
-    let (_,isFacingCamera) = viewTransformation model facet False (1.0/6.0)
+    let (_,isFacingCamera) = viewTransformation model facet (1.0/6.0)
     in isFacingCamera
 
-viewKit :: Model -> Facet -> Bool -> Float -> (Bool, FaceViewKit)
-viewKit model@(Model topFace orientation twist twistMode) viewFacet withTwist offset = 
+viewKit :: Model -> Facet -> Float -> (Bool, FaceViewKit)
+viewKit model@(Model topFace orientation ) viewFacet offset = 
     let viewCenterFacet = (south.south) viewFacet 
         (modelTransform, isFacingCamera) 
-            = viewTransformation model viewCenterFacet withTwist offset
+            = viewTransformation model viewCenterFacet offset
 
         -- scale up to svg box scale
         viewScaleMatrix = scaleMatrix viewScale
@@ -416,36 +408,24 @@ viewKit model@(Model topFace orientation twist twistMode) viewFacet withTwist of
 
     in (isFacingCamera, FaceViewKit viewFacet viewTransform)
 
-kitmapUpdate :: Model -> Bool -> Float -> ViewKitCollection -> Facet -> ViewKitCollection
-kitmapUpdate model withTwist offset prevMap lowerLeft = 
+kitmapUpdate :: Model -> Float -> ViewKitCollection -> Facet -> ViewKitCollection
+kitmapUpdate model offset prevMap lowerLeft = 
     let (isVisible, newViewKit) 
-            = viewKit model lowerLeft withTwist offset
+            = viewKit model lowerLeft offset
     in  if isVisible 
         then insert ((color.south.south) lowerLeft) newViewKit prevMap
         else prevMap
 
 topView :: Model -> ViewKitCollection
-topView model@(Model center _ _ twistMode)  =
-    foldl (kitmapUpdate model (twistMode == TopTwist) (1.0/2.0)) empty [getLowerLeft center]
+topView model@(Model center _ )  =
+    foldl (kitmapUpdate model (1.0/2.0)) empty [getLowerLeft center]
 
 bottomView :: Model -> ViewKitCollection
-bottomView model@(Model center _ _ twistMode)  =
-    foldl (kitmapUpdate model (twistMode == BottomTwist) 0.5) empty [(west.south.west.west.south.west.getLowerLeft) center]
-
-middleUpView :: Model -> ViewKitCollection
-middleUpView model@(Model center _ twist twistMode)  =
-    if twist == 0 || twistMode /= TopTwist
-    then empty
-    else foldl (kitmapUpdate model False (1.0/6.0)) empty [getLowerLeft center]
-
-bottomUpView :: Model -> ViewKitCollection
-bottomUpView model@(Model center _ twist twistMode)  =
-    if twist == 0 || twistMode /= BottomTwist
-    then empty
-    else foldl (kitmapUpdate model True (-1.0/6.0)) empty [getLowerLeft center]
+bottomView model@(Model center _ )  =
+    foldl (kitmapUpdate model  0.5) empty [(west.south.west.west.south.west.getLowerLeft) center]
 
 upperRights :: Model -> [Facet]
-upperRights model@(Model center _ _ _)   =
+upperRights model@(Model center _ )   =
     let upperRight = (north.getLowerLeft) center
         advancers = [ west.west.south
                     , west.west.south
@@ -454,7 +434,7 @@ upperRights model@(Model center _ _ _)   =
     in scanl (&) upperRight advancers  -- get upper right corners of all faces
 
 lowerLefts :: Model -> [Facet]
-lowerLefts model@(Model center _ _ _)   =
+lowerLefts model@(Model center _ )   =
     let lowerLeft = (west.south.west.getLowerLeft) center
         advancers = [ west.west.south
                     , west.west.south
@@ -463,16 +443,16 @@ lowerLefts model@(Model center _ _ _)   =
     in scanl (&) lowerLeft advancers  -- get lower left corners of all faces
 
 upperMiddleView :: Model -> ViewKitCollection
-upperMiddleView model@(Model center _ _ twistMode)   =
-    foldl (kitmapUpdate model (twistMode == TopTwist) 0.5) empty $ upperRights model
+upperMiddleView model@(Model center _ )   =
+    foldl (kitmapUpdate model 0.5) empty $ upperRights model
 
 middleMiddleView :: Model -> ViewKitCollection
-middleMiddleView model@(Model center _ _ twistMode)   =
-    foldl (kitmapUpdate model False 0.5) empty $ upperRights model
+middleMiddleView model@(Model center _ )   =
+    foldl (kitmapUpdate model 0.5) empty $ upperRights model
 
 lowerMiddleView :: Model -> ViewKitCollection
-lowerMiddleView model@(Model center _ _ twistMode)  =
-    foldl (kitmapUpdate model (twistMode == BottomTwist) 0.5) empty $ lowerLefts model
+lowerMiddleView model@(Model center _ )  =
+    foldl (kitmapUpdate model  0.5) empty $ lowerLefts model
 
 getLowerLeft :: Facet -> Facet
 getLowerLeft centerFace =
@@ -518,17 +498,13 @@ viewModel :: MonadWidget t m => Dynamic t Model -> m (Event t Action)
 viewModel model = do
     bottomMap <-                    mapDyn bottomView model
     lowerMiddleMap <-               mapDyn lowerMiddleView model
-    bottomUpMap <-                  mapDyn bottomUpView model
     middleMiddleMap <-              mapDyn middleMiddleView model
-    middleUpMap <-                  mapDyn middleUpView model
     upperMiddleMap <-               mapDyn upperMiddleView model
     topMap <-                       mapDyn topView model
 
     bottomEventsWithKeys <-         listWithKey bottomMap $ const showFace
     lowerMiddleEventsWithKeys <-    listWithKey lowerMiddleMap $ const showLowerMiddleFace
-    _ <-                            listWithKey bottomUpMap $ const showInside
     middleMiddleEventsWithKeys <-   listWithKey middleMiddleMap $ const showMiddleMiddleFace
-    _ <-                            listWithKey middleUpMap $ const showInside
     upperMiddleEventsWithKeys <-    listWithKey upperMiddleMap $ const showUpperMiddleFace
     topEventsWithKeys <-            listWithKey topMap $ const showFace
 

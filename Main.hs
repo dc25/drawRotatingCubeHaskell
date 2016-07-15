@@ -24,5 +24,5 @@ main = mainWidget $ do
     let advanceAction = fmap (const Animate) tick
     rec
         selectAction <- view model
-        model <- foldDyn update (Model mkCube initialOrientation 0 NoTwist) $ leftmost [selectAction, advanceAction]
+        model <- foldDyn update (Model mkCube initialOrientation ) $ leftmost [selectAction, advanceAction]
     return ()

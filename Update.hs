@@ -19,20 +19,12 @@ applyRotation rotationMatrix  prevOrientation =
 rotateModel rotationMatrix model = 
     model { orientation = applyRotation rotationMatrix $ orientation model }
 
-untwist model = 
-    let prev_twist = twist model
-        new_twist
-            | prev_twist == 0 = 0
-            | prev_twist > 0 = prev_twist - 30
-            | prev_twist < 0 = prev_twist + 30
-    in model { twist = new_twist }
-
 -- | FRP style update function. Given action and model, return updated model.
 update :: Action -> Model -> Model
 update action model = 
     case action of
-        Animate ->
-            untwist model
+        Animate -> model
+            -- untwist model
         RotateFace rotation facet -> 
             let 
                 opposingFacet = (south.east. north.east.east. north.west.north) facet
@@ -46,8 +38,7 @@ update action model =
                     | ((rotation,twistMode) == (CW,  BottomTwist)) = (-90)
                     | ((rotation,twistMode) == (CCW,  BottomTwist)) = 90
             in model { cube = rotateFace rotation facet topFacet
-                     , twist = twist
-                     , twistMode = twistMode }
+                     }
         NudgeCube direction -> 
             let step = pi/20
             in case direction of
