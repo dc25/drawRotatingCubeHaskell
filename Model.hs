@@ -1,9 +1,7 @@
 module Model where
 
-import Cube
 import Data.Matrix
 
-data Model = Model { cube :: Facet 
-                   , orientation :: Matrix Float
+data Model = Model { orientation :: Matrix Float
                    }
 

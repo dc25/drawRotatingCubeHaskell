@@ -10,11 +10,8 @@ import Data.Monoid ((<>))
 import Control.Monad(sequence,fmap,return,(>>=),(=<<))
 
 import Matrices
-import Rotation
-import Direction as D
 import Action
 import Color
-import Cube
 import Model
 
 viewScale = 500
@@ -34,7 +31,6 @@ transformPoints transform points =
 
 pointsToString :: [(Float,Float)] -> String
 pointsToString = concatMap (\(x,y) -> show x ++ ", " ++ show y ++ " ") 
-
 showFacetRectangle :: MonadWidget t m => Float -> Float -> Float -> Float -> Color -> Dynamic t FaceViewKit -> m (Dynamic t FaceViewKit)
 showFacetRectangle x0 y0 x1 y1 faceColor dFaceViewKit = do
     let points = fromLists [[x0,y0,0,1],[x0,y1,0,1],[x1,y1,0,1],[x1,y0,0,1]]
@@ -51,15 +47,10 @@ showFacetSquare x y faceColor margin dFaceViewKit = do
         y1 = y0 + 1 - 2 * margin
     showFacetRectangle x0 y0 x1 y1 faceColor dFaceViewKit
 
-showFacet :: MonadWidget t m => Int -> Int -> Color -> Dynamic t FaceViewKit -> m (Dynamic t FaceViewKit)
-showFacet x y faceColor dFaceViewKit = do
-    showFacetSquare x y Black 0 dFaceViewKit
-    showFacetSquare x y faceColor 0.05 dFaceViewKit
-    return dFaceViewKit
-
 showFace :: MonadWidget t m => Color -> Dynamic t FaceViewKit -> m (Event t Action)
-showFace faceColor lowerLeft = do  
-    showFacet 0 0 faceColor lowerLeft
+showFace faceColor dFaceViewKit = do  
+    showFacetSquare 0 0 Black 0 dFaceViewKit
+    showFacetSquare 0 0 faceColor 0.05 dFaceViewKit
     return never
 
 facingCamera :: [Float] -> Matrix Float -> Bool
@@ -93,12 +84,12 @@ facingCamera viewPoint modelTransform =
         -- should be opposed to each other. 
     in cameraToPlane `dot` perpendicular < 0
 
-viewTransformation :: Model -> Color -> Float -> (Matrix Float, Bool)
-viewTransformation model@(Model topFace orientation ) faceColor offset = 
+viewTransformation :: Model -> Color -> (Matrix Float, Bool)
+viewTransformation model@(Model orientation ) faceColor = 
     let trans2d = -1/2  -- translate center of 1x1 square face to origin.
         trans2dMatrix = translationMatrix (trans2d,trans2d,0)
 
-        offsetMatrix = translationMatrix (0,0,offset)
+        offsetMatrix = translationMatrix (0,0,1/2)
 
         -- Rotate face into position .  
         assemblies = fromList
@@ -150,10 +141,10 @@ viewTransformation model@(Model topFace orientation ) faceColor offset =
         isFacingCamera = facingCamera [0,0,-1] modelTransform
     in (modelTransform, isFacingCamera)
 
-viewKit :: Model -> Color -> Float -> (Bool, FaceViewKit)
-viewKit model@(Model topFace orientation ) faceColor offset = 
+viewKit :: Model -> Color -> (Bool, FaceViewKit)
+viewKit model@(Model orientation ) faceColor = 
     let (modelTransform, isFacingCamera) 
-            = viewTransformation model faceColor offset
+            = viewTransformation model faceColor 
 
         -- scale up to svg box scale
         viewScaleMatrix = scaleMatrix viewScale
@@ -170,21 +161,21 @@ viewKit model@(Model topFace orientation ) faceColor offset =
 
     in (isFacingCamera, FaceViewKit viewTransform)
 
-kitmapUpdate :: Model -> Float -> ViewKitCollection -> Color -> ViewKitCollection
-kitmapUpdate model offset prevMap faceColor = 
+kitmapUpdate :: Model -> ViewKitCollection -> Color -> ViewKitCollection
+kitmapUpdate model prevMap faceColor = 
     let (isVisible, newViewKit) 
-            = viewKit model faceColor offset
+            = viewKit model faceColor 
     in  if isVisible 
         then insert faceColor newViewKit prevMap
         else prevMap
 
 topView :: Model -> ViewKitCollection
-topView model@(Model center _ )  =
-    foldl (kitmapUpdate model (1.0/2.0)) empty [Red, Green, Blue, Yellow, Orange, Purple]
+topView model  =
+    foldl (kitmapUpdate model ) empty [Red, Green, Blue, Yellow, Orange, Purple]
 
 viewModel :: MonadWidget t m => Dynamic t Model -> m (Event t Action)
 viewModel model = do
-    topMap <-                       mapDyn topView model
+    topMap <- mapDyn topView model
 
     listWithKey topMap showFace
 

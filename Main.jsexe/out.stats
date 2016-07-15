@@ -5,13 +5,13 @@ conta_5w3UY4chXx62LVUOUrXeRm:182061
 depen_5vw10fkSDDD0LdF4Qk8khv:2849
 depen_HCFzp6ZGqMz1lvJkHhl9BD:46847
 excep_GsT9breZyJSLZ8kkCjLGTR:4696
-ghc-prim:                49640
+ghc-prim:                35455
 ghcjs_B7KLFJ07Vte3zPHAgRIBTb:11013
 ghcjs_D7BYGeMTlMGF2My8KZzKUS:152503
 ghcjs_Kc7TQ2cEDg1F5e5cgY2Vuk:9821
 integer-gmp:             42831
-main:                    110241
-matri_682HBa36TWs8HIx1KnWQ3t:31360
+main:                    84230
+matri_682HBa36TWs8HIx1KnWQ3t:31290
 primi_293YT17zdlWL9QJgnLTQSn:2385
 refle_BP42iAL8rA7IBOuWCaV0zs:399403
 refle_IbNW0IEhD2N2cZrEG6FTBQ:477343
@@ -20,7 +20,7 @@ text_1ffW5NTi2SPHBcBuYSkgjk:19877
 these_6AzwGhJzfucJgGlyPQnsSR:2743
 time_KPHTSoBSjtZ5lswdMFwFfY:10375
 trans_KzbnBSIEqPI2eU1Inn4mzm:27894
-vecto_FNLwpzrmeRC6Ra1RihE2cq:71504
+vecto_FNLwpzrmeRC6Ra1RihE2cq:71011
 
 
 code size per module:
@@ -101,9 +101,9 @@ excep_GsT9breZyJSLZ8kkCjLGTR
 
 ghc-prim
     GHC.CString:                        4537
-    GHC.Classes:                        42017
+    GHC.Classes:                        28185
     GHC.IntWord64:                      146
-    GHC.Tuple:                          1451
+    GHC.Tuple:                          1098
     GHC.Types:                          1489
 
 ghcjs_B7KLFJ07Vte3zPHAgRIBTb
@@ -130,19 +130,16 @@ integer-gmp
     GHC.Integer.Type:                   42498
 
 main
-    Action:                             264
+    Action:                             70
     Color:                              24872
-    Cube:                               20634
-    Direction:                          279
-    Main:                               14580
+    Main:                               14195
     Matrices:                           8429
-    Model:                              474
-    Rotation:                           987
-    Update:                             3955
-    View:                               35767
+    Model:                              327
+    Update:                             1159
+    View:                               35178
 
 matri_682HBa36TWs8HIx1KnWQ3t
-    Data.Matrix:                        31360
+    Data.Matrix:                        31290
 
 primi_293YT17zdlWL9QJgnLTQSn
     Control.Monad.Primitive:            1043
@@ -187,20 +184,20 @@ trans_KzbnBSIEqPI2eU1Inn4mzm
     Control.Monad.Trans.State.Strict:   9180
 
 vecto_FNLwpzrmeRC6Ra1RihE2cq
-    Data.Vector:                        8124
+    Data.Vector:                        8104
     Data.Vector.Fusion.Bundle:          300
-    Data.Vector.Fusion.Bundle.Monadic:  4285
+    Data.Vector.Fusion.Bundle.Monadic:  4261
     Data.Vector.Fusion.Bundle.Size:     347
     Data.Vector.Fusion.Stream.Monadic:  845
-    Data.Vector.Fusion.Util:            4402
-    Data.Vector.Generic:                3809
-    Data.Vector.Generic.Base:           1291
-    Data.Vector.Generic.Mutable.Base:   2157
+    Data.Vector.Fusion.Util:            4375
+    Data.Vector.Generic:                3770
+    Data.Vector.Generic.Base:           1283
+    Data.Vector.Generic.Mutable.Base:   2143
     Data.Vector.Generic.New:            314
-    Data.Vector.Internal.Check:         7674
-    Data.Vector.Mutable:                37956
+    Data.Vector.Internal.Check:         7611
+    Data.Vector.Mutable:                37658
 
 
 
-packed metadata: 416407
+packed metadata: 407783
 

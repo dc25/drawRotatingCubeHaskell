@@ -9,19 +9,18 @@ import Matrices
 import View
 import Action
 import Model
-import Cube
 import Update
 
 main = mainWidget $ do 
     let initialOrientation =             identityMatrix 
                               `multStd2` zxRotationMatrix (3*pi/4) 
                               `multStd2` yzRotationMatrix (pi/4)
-        dt = 0.4
+        dt = 0.1
 
     now <- liftIO getCurrentTime
     tick <- tickLossy dt now
     let advanceAction = fmap (const Animate) tick
     rec
-        selectAction <- view model
-        model <- foldDyn update (Model mkCube initialOrientation ) $ leftmost [selectAction, advanceAction]
+        view model
+        model <- foldDyn update (Model initialOrientation ) $ leftmost [advanceAction]
     return ()

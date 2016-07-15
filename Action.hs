@@ -1,7 +1,3 @@
-module Action (Action(NudgeCube,Animate)) where
+module Action (Action(Animate)) where
 
-import Cube
-import Rotation
-import Direction
-
-data Action = NudgeCube Direction | Animate
+data Action = Animate
