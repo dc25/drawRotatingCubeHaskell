@@ -12,8 +12,6 @@ import Control.Monad.Trans (liftIO)
 data Action = Animate
 data Color = Red | Green | Blue | Yellow | Orange | Purple | Black deriving (Show,Eq,Ord,Enum)
 
-data Model = Model { orientation :: Matrix Float }
-
 xyRotationMatrix :: Float -> Matrix Float
 xyRotationMatrix rotation = 
     let c = cos rotation
@@ -60,7 +58,7 @@ scaleMatrix s =
                ,[ 0,  0,  0,  1 ]
                ]
 
--- translate model to (0,0,1) for perspective viewing
+-- translate to (0,0,1) for perspective viewing
 perspectivePrepMatrix :: Matrix Float
 perspectivePrepMatrix = translationMatrix (0,0,1)
 
@@ -139,8 +137,8 @@ facingCamera viewPoint modelTransform =
         -- should be opposed to each other. 
     in cameraToPlane `dot` perpendicular < 0
 
-viewTransformation :: Model -> Color -> (Matrix Float, Bool)
-viewTransformation model@(Model orientation ) faceColor = 
+viewTransformation :: Matrix Float -> Color -> (Matrix Float, Bool)
+viewTransformation orientation faceColor = 
     let trans2d = -1/2  -- translate center of 1x1 square face to origin.
         trans2dMatrix = translationMatrix (trans2d,trans2d,0)
 
@@ -196,10 +194,10 @@ viewTransformation model@(Model orientation ) faceColor =
         isFacingCamera = facingCamera [0,0,-1] modelTransform
     in (modelTransform, isFacingCamera)
 
-viewKit :: Model -> Color -> (Bool, Matrix Float)
-viewKit model@(Model orientation ) faceColor = 
+viewKit :: Matrix Float -> Color -> (Bool, Matrix Float)
+viewKit orientation faceColor = 
     let (modelTransform, isFacingCamera) 
-            = viewTransformation model faceColor 
+            = viewTransformation orientation faceColor 
 
         -- scale up to svg box scale
         viewScaleMatrix = scaleMatrix viewScale
@@ -216,39 +214,39 @@ viewKit model@(Model orientation ) faceColor =
 
     in (isFacingCamera, viewTransform)
 
-kitmapUpdate :: Model -> ViewKitCollection -> Color -> ViewKitCollection
-kitmapUpdate model prevMap faceColor = 
+kitmapUpdate :: Matrix Float -> ViewKitCollection -> Color -> ViewKitCollection
+kitmapUpdate orientation prevMap faceColor = 
     let (isVisible, newViewKit) 
-            = viewKit model faceColor 
+            = viewKit orientation faceColor 
     in  if isVisible 
         then insert faceColor newViewKit prevMap
         else prevMap
 
-topView :: Model -> ViewKitCollection
-topView model  =
-    foldl (kitmapUpdate model ) empty [Red, Green, Blue, Yellow, Orange, Purple]
+topView :: Matrix Float -> ViewKitCollection
+topView orientation  =
+    foldl (kitmapUpdate orientation ) empty [Red, Green, Blue, Yellow, Orange, Purple]
 
-viewModel :: MonadWidget t m => Dynamic t Model -> m ()
-viewModel model = do
-    topMap <- mapDyn topView model
+viewModel :: MonadWidget t m => Dynamic t (Matrix Float) -> m ()
+viewModel orientation = do
+    topMap <- mapDyn topView orientation
     listWithKey topMap showFace
     return ()
 
-view :: MonadWidget t m => Dynamic t Model -> m (Event t Action)
-view model = 
+view :: MonadWidget t m => Dynamic t (Matrix Float) -> m (Event t Action)
+view orientation = 
     el "div" $ do
         (_,ev) <-    elDynAttrNS' svgNamespace "svg" 
                        (constDyn $  "width" =: show viewScale
                                  <> "height" =: show viewScale
-                                 ) $ viewModel model
+                                 ) $ viewModel orientation
         return never
 
-rotateModel rotationMatrix model = 
-    model { orientation = orientation model `multStd2` rotationMatrix }
+rotateModel rotationMatrix orientation = 
+    orientation `multStd2` rotationMatrix 
 
-update :: Action -> Model -> Model
-update _ model = 
-    rotateModel (zxRotationMatrix (-pi/20) ) model
+update :: Action -> Matrix Float -> Matrix Float
+update _ orientation = 
+    rotateModel (zxRotationMatrix (-pi/20) ) orientation
 
 main = mainWidget $ do 
     let initialOrientation =             zxRotationMatrix (3*pi/4) 
@@ -258,6 +256,6 @@ main = mainWidget $ do
     tick <- tickLossy dt =<< liftIO getCurrentTime
     let advanceAction = fmap (const Animate) tick
     rec
-        view model
-        model <- foldDyn update (Model initialOrientation ) $ leftmost [advanceAction]
+        view orientation
+        orientation <- foldDyn update initialOrientation $ leftmost [advanceAction]
     return ()
