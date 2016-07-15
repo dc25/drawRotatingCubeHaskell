@@ -3,7 +3,7 @@
 import Reflex.Dom (mainWidget,tickLossy,foldDyn, MonadWidget ,Dynamic ,Event ,EventName(Click) ,attachWith ,button ,constDyn ,current ,domEvent ,el ,elAttr ,elDynAttrNS' ,leftmost ,listWithKey ,mapDyn ,switch ,never ,(=:) ,(&))
 
 import Data.Map as DM (Map, lookup, insert, empty, fromList, elems)
-import Data.List (foldl, scanl, head)
+import Data.List (foldl1, foldl, scanl, head)
 import Data.Maybe (Maybe(Just))
 import Data.Matrix (Matrix, fromLists, toLists, multStd2)
 import Data.Monoid ((<>))
@@ -16,14 +16,6 @@ data Color = Red | Green | Blue | Yellow | Orange | Purple | Black deriving (Sho
 
 data Model = Model { orientation :: Matrix Float
                    }
-
-identityMatrix :: Matrix Float
-identityMatrix = 
-    fromLists [[ 1,  0,  0,  0 ]
-              ,[ 0,  1,  0,  0 ]
-              ,[ 0,  0,  1,  0 ]
-              ,[ 0,  0,  0,  1 ]
-              ]
 
 xyRotationMatrix :: Float -> Matrix Float
 xyRotationMatrix rotation = 
@@ -204,7 +196,7 @@ viewTransformation model@(Model orientation ) faceColor =
                                ]
 
         -- combine to single transform from 2d to 3d
-        modelTransform =  foldl multStd2 identityMatrix modelTransformations
+        modelTransform =  foldl1 multStd2 modelTransformations
 
         -- backface elimination
         isFacingCamera = facingCamera [0,0,-1] modelTransform
@@ -275,8 +267,7 @@ update action model =
             in rotateModel (zxRotationMatrix (-pi/20) ) model
 
 main = mainWidget $ do 
-    let initialOrientation =             identityMatrix 
-                              `multStd2` zxRotationMatrix (3*pi/4) 
+    let initialOrientation =             zxRotationMatrix (3*pi/4) 
                               `multStd2` yzRotationMatrix (pi/4)
         dt = 0.1
 
