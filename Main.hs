@@ -1,7 +1,5 @@
 {-# LANGUAGE RecursiveDo #-}
-
-import Reflex.Dom (mainWidget,tickLossy,foldDyn, MonadWidget ,Dynamic ,Event ,EventName(Click) ,attachWith ,button ,constDyn ,current ,domEvent ,el ,elAttr ,elDynAttrNS' ,leftmost ,listWithKey ,mapDyn ,switch ,never ,(=:) ,(&))
-
+import Reflex.Dom 
 import Data.Map as DM (Map, lookup, insert, empty, fromList, elems)
 import Data.List (foldl1, foldl, scanl, head)
 import Data.Maybe (Maybe(Just))
@@ -14,8 +12,7 @@ import Control.Monad.Trans (liftIO)
 data Action = Animate
 data Color = Red | Green | Blue | Yellow | Orange | Purple | Black deriving (Show,Eq,Ord,Enum)
 
-data Model = Model { orientation :: Matrix Float
-                   }
+data Model = Model { orientation :: Matrix Float }
 
 xyRotationMatrix :: Float -> Matrix Float
 xyRotationMatrix rotation = 
@@ -90,27 +87,26 @@ transformPoints transform points =
 
 pointsToString :: [(Float,Float)] -> String
 pointsToString = concatMap (\(x,y) -> show x ++ ", " ++ show y ++ " ") 
-showFacetRectangle :: MonadWidget t m => Float -> Float -> Float -> Float -> Color -> Dynamic t (Matrix Float) -> m (Dynamic t (Matrix Float))
+showFacetRectangle :: MonadWidget t m => Float -> Float -> Float -> Float -> Color -> Dynamic t (Matrix Float) -> m ()
 showFacetRectangle x0 y0 x1 y1 faceColor dFaceViewKit = do
     let points = fromLists [[x0,y0,0,1],[x0,y1,0,1],[x1,y1,0,1],[x1,y0,0,1]]
     dAttrs <- mapDyn (\fvk -> "fill" =: show faceColor  <> 
                               "points" =: pointsToString (transformPoints fvk points))  dFaceViewKit
     (el,_) <- elDynAttrNS' svgNamespace "polygon" dAttrs $ return ()
-    return dFaceViewKit
+    return ()
 
-showFacetSquare :: MonadWidget t m => Int -> Int -> Color -> Float -> Dynamic t (Matrix Float) -> m (Dynamic t (Matrix Float))
-showFacetSquare x y faceColor margin dFaceViewKit = do
-    let x0 = fromIntegral x + margin
-        y0 = fromIntegral y + margin
-        x1 = x0 + 1 - 2 * margin
-        y1 = y0 + 1 - 2 * margin
+showFacetSquare :: MonadWidget t m => Color -> Float -> Dynamic t (Matrix Float) -> m ()
+showFacetSquare faceColor margin dFaceViewKit = do
+    let x0 = margin
+        y0 = margin
+        x1 = 1.0 - margin
+        y1 = 1.0 - margin
     showFacetRectangle x0 y0 x1 y1 faceColor dFaceViewKit
 
-showFace :: MonadWidget t m => Color -> Dynamic t (Matrix Float) -> m (Event t Action)
+showFace :: MonadWidget t m => Color -> Dynamic t (Matrix Float) -> m ()
 showFace faceColor dFaceViewKit = do  
-    showFacetSquare 0 0 Black 0 dFaceViewKit
-    showFacetSquare 0 0 faceColor 0.05 dFaceViewKit
-    return never
+    showFacetSquare Black 0 dFaceViewKit
+    showFacetSquare faceColor 0.05 dFaceViewKit
 
 facingCamera :: [Float] -> Matrix Float -> Bool
 facingCamera viewPoint modelTransform =
@@ -232,13 +228,11 @@ topView :: Model -> ViewKitCollection
 topView model  =
     foldl (kitmapUpdate model ) empty [Red, Green, Blue, Yellow, Orange, Purple]
 
-viewModel :: MonadWidget t m => Dynamic t Model -> m (Event t Action)
+viewModel :: MonadWidget t m => Dynamic t Model -> m ()
 viewModel model = do
     topMap <- mapDyn topView model
-
     listWithKey topMap showFace
-
-    return never
+    return ()
 
 view :: MonadWidget t m => Dynamic t Model -> m (Event t Action)
 view model = 
