@@ -9,7 +9,6 @@ import Matrices
 import View
 import Action
 import Model
-import Update
 
 main = mainWidget $ do 
     let initialOrientation =             identityMatrix 

@@ -1,4 +1,4 @@
-module View (view) where
+module View (view, update) where
 
 import Reflex.Dom ( MonadWidget ,Dynamic ,Event ,EventName(Click) ,attachWith ,button ,constDyn ,current ,domEvent ,el ,elAttr ,elDynAttrNS' ,leftmost ,listWithKey ,mapDyn ,switch ,never ,(=:) ,(&))
 
@@ -190,3 +190,18 @@ view model =
                                  ) $ viewModel model
         return never
 
+applyRotation :: Matrix Float -> Matrix Float -> Matrix Float
+applyRotation rotationMatrix  prevOrientation = 
+    prevOrientation `multStd2` rotationMatrix
+
+rotateModel rotationMatrix model = 
+    model { orientation = applyRotation rotationMatrix $ orientation model }
+
+-- | FRP style update function. Given action and model, return updated model.
+update :: Action -> Model -> Model
+update action model = 
+    case action of
+        Animate -> 
+            let step = pi/20
+            in rotateModel (zxRotationMatrix (-pi/20) ) model
+ 

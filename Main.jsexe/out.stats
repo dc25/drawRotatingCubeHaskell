@@ -10,7 +10,7 @@ ghcjs_B7KLFJ07Vte3zPHAgRIBTb:11013
 ghcjs_D7BYGeMTlMGF2My8KZzKUS:152503
 ghcjs_Kc7TQ2cEDg1F5e5cgY2Vuk:9821
 integer-gmp:             42831
-main:                    84230
+main:                    84226
 matri_682HBa36TWs8HIx1KnWQ3t:31290
 primi_293YT17zdlWL9QJgnLTQSn:2385
 refle_BP42iAL8rA7IBOuWCaV0zs:399403
@@ -132,11 +132,10 @@ integer-gmp
 main
     Action:                             70
     Color:                              24872
-    Main:                               14195
+    Main:                               14193
     Matrices:                           8429
     Model:                              327
-    Update:                             1159
-    View:                               35178
+    View:                               36335
 
 matri_682HBa36TWs8HIx1KnWQ3t
     Data.Matrix:                        31290
@@ -199,5 +198,5 @@ vecto_FNLwpzrmeRC6Ra1RihE2cq
 
 
 
-packed metadata: 407783
+packed metadata: 407779
 
