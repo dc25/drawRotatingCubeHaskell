@@ -1,7 +1,7 @@
 {-# LANGUAGE RecursiveDo #-}
 import Reflex.Dom 
 import Data.Map as DM (Map, lookup, insert, empty, fromList, elems)
-import Data.List (foldl1, foldl, scanl, head)
+import Data.List (foldl1, foldl, head)
 import Data.Maybe (Maybe(Just))
 import Data.Matrix (Matrix, fromLists, toLists, multStd2)
 import Data.Monoid ((<>))
@@ -9,8 +9,13 @@ import Control.Monad(fmap,return,(>>=),(=<<))
 import Data.Time.Clock (getCurrentTime)
 import Control.Monad.Trans (liftIO)
 
-data Action = Animate
+viewScale = 500
+updateFrequency = 0.2
+rotationStep = pi/10
+
 data Color = Red | Green | Blue | Yellow | Orange | Purple | Black deriving (Show,Eq,Ord,Enum)
+
+type FaceViewCollection = Map Color (Matrix Float)
 
 xyRotationMatrix :: Float -> Matrix Float
 xyRotationMatrix rotation = 
@@ -36,9 +41,9 @@ zxRotationMatrix :: Float -> Matrix Float
 zxRotationMatrix rotation = 
     let c = cos rotation
         s = sin rotation
-    in fromLists [[ c,  0,  s,  0 ]
+    in fromLists [[ c,  0, -s,  0 ]
                  ,[ 0,  1,  0,  0 ]
-                 ,[-s,  0,  c,  0 ]
+                 ,[ s,  0,  c,  0 ]
                  ,[ 0,  0,  0,  1 ]
                  ]
 
@@ -70,10 +75,6 @@ perspectiveMatrix =
                ,[ 0,  0,  1,  1 ]
                ,[ 0,  0,  0,  0 ] ]
 
-viewScale = 500
-
-type ViewKitCollection = Map Color (Matrix Float)
-
 -- | Namespace needed for svg elements.
 svgNamespace = Just "http://www.w3.org/2000/svg"
 
@@ -85,26 +86,26 @@ transformPoints transform points =
 
 pointsToString :: [(Float,Float)] -> String
 pointsToString = concatMap (\(x,y) -> show x ++ ", " ++ show y ++ " ") 
-showFacetRectangle :: MonadWidget t m => Float -> Float -> Float -> Float -> Color -> Dynamic t (Matrix Float) -> m ()
-showFacetRectangle x0 y0 x1 y1 faceColor dFaceViewKit = do
+showRectangle :: MonadWidget t m => Float -> Float -> Float -> Float -> Color -> Dynamic t (Matrix Float) -> m ()
+showRectangle x0 y0 x1 y1 faceColor dFaceView = do
     let points = fromLists [[x0,y0,0,1],[x0,y1,0,1],[x1,y1,0,1],[x1,y0,0,1]]
     dAttrs <- mapDyn (\fvk -> "fill" =: show faceColor  <> 
-                              "points" =: pointsToString (transformPoints fvk points))  dFaceViewKit
+                              "points" =: pointsToString (transformPoints fvk points))  dFaceView
     (el,_) <- elDynAttrNS' svgNamespace "polygon" dAttrs $ return ()
     return ()
 
-showFacetSquare :: MonadWidget t m => Color -> Float -> Dynamic t (Matrix Float) -> m ()
-showFacetSquare faceColor margin dFaceViewKit = do
+showUnitSquare :: MonadWidget t m => Color -> Float -> Dynamic t (Matrix Float) -> m ()
+showUnitSquare faceColor margin dFaceView = do
     let x0 = margin
         y0 = margin
         x1 = 1.0 - margin
         y1 = 1.0 - margin
-    showFacetRectangle x0 y0 x1 y1 faceColor dFaceViewKit
+    showRectangle x0 y0 x1 y1 faceColor dFaceView
 
 showFace :: MonadWidget t m => Color -> Dynamic t (Matrix Float) -> m ()
-showFace faceColor dFaceViewKit = do  
-    showFacetSquare Black 0 dFaceViewKit
-    showFacetSquare faceColor 0.05 dFaceViewKit
+showFace faceColor dFaceView = do  
+    showUnitSquare Black 0 dFaceView
+    showUnitSquare faceColor 0.03 dFaceView
 
 facingCamera :: [Float] -> Matrix Float -> Bool
 facingCamera viewPoint modelTransform =
@@ -116,19 +117,23 @@ facingCamera viewPoint modelTransform =
 
         vMinus = zipWith (-) 
 
-        threeUntransformedPoints = fromLists [ [0,0,0,1]   -- lower left corner of original face
-                                             , [1,0,0,1]   -- lower right corner of original face
-                                             , [0,1,0,1] ] -- upper left corner of original face
+        threeUntransformedPoints = fromLists [ [0,0,0,1]   -- lower left 
+                                             , [1,0,0,1]   -- lower right 
+                                             , [0,1,0,1] ] -- upper left 
 
         threeTransformedPoints = toLists $ threeUntransformedPoints `multStd2` modelTransform
         pt00 = take 3 $ head threeTransformedPoints 
         pt10 = take 3 $ threeTransformedPoints !! 1
         pt01 = take 3 $ threeTransformedPoints !! 2
 
-        tVec_10_00 = pt10 `vMinus` pt00  -- vector from lower right to lower left
-        tVec_01_00 = pt01 `vMinus` pt00  -- vector from upper left to lower left
+        -- vector from lower right to lower left
+        tVec_10_00 = pt10 `vMinus` pt00  
 
-        perpendicular = tVec_10_00 `cross` tVec_01_00  -- cross to get perpendicular pointing out from face.
+        -- vector from upper left to lower left
+        tVec_01_00 = pt01 `vMinus` pt00  
+
+        -- cross to get perpendicular pointing out from face.
+        perpendicular = tVec_10_00 `cross` tVec_01_00  
         cameraToPlane = pt00 `vMinus` viewPoint
 
         -- perpendicular always points out from surface of cube.
@@ -146,45 +151,24 @@ viewTransformation orientation faceColor =
 
         -- Rotate face into position .  
         assemblies = fromList
-                        [ ( Purple
-                          ,  []
-                          )  
-
-                        , ( Yellow
-                          ,  [ yzRotationMatrix (pi/2) ]
-                          )  
-
-                        , ( Red
-                          ,  [ yzRotationMatrix (pi/2)
-                             , xyRotationMatrix (pi/2) ]
-                          )  
-
-                        , ( Green
-                          ,  [ yzRotationMatrix (pi/2)
-                             , xyRotationMatrix pi ]
-                          )  
-
-                        , ( Blue
-                          ,  [ yzRotationMatrix (pi/2)
-                             , xyRotationMatrix (-pi/2) ]
-                          )  
-
-                        , ( Orange
-                          , [ yzRotationMatrix pi ]
-                          )
+                        [ ( Purple ,  yzRotationMatrix (0.0) )  
+                        , ( Yellow ,  yzRotationMatrix (pi/2))  
+                        , ( Red ,     zxRotationMatrix (pi/2) )  
+                        , ( Green ,   yzRotationMatrix (-pi/2) )  
+                        , ( Blue ,    zxRotationMatrix (-pi/2) )  
+                        , ( Orange ,  yzRotationMatrix (pi) )
                         ]
 
-        Just assembleMatricies = DM.lookup faceColor assemblies 
+        Just assemble = DM.lookup faceColor assemblies 
 
         -- scale down to fit in camera space
         scale3dMatrix = scaleMatrix (1/2)
 
         modelTransformations = [ trans2dMatrix 
                                , offsetMatrix
-                               ] ++ 
-                               assembleMatricies ++ -- may be 0,1 or 2 matricies
-                               [ scale3dMatrix,
-                                 orientation
+                               , assemble 
+                               , scale3dMatrix
+                               , orientation
                                ]
 
         -- combine to single transform from 2d to 3d
@@ -194,8 +178,8 @@ viewTransformation orientation faceColor =
         isFacingCamera = facingCamera [0,0,-1] modelTransform
     in (modelTransform, isFacingCamera)
 
-viewKit :: Matrix Float -> Color -> (Bool, Matrix Float)
-viewKit orientation faceColor = 
+faceView :: Matrix Float -> Color -> (Bool, Matrix Float)
+faceView orientation faceColor = 
     let (modelTransform, isFacingCamera) 
             = viewTransformation orientation faceColor 
 
@@ -214,48 +198,44 @@ viewKit orientation faceColor =
 
     in (isFacingCamera, viewTransform)
 
-kitmapUpdate :: Matrix Float -> ViewKitCollection -> Color -> ViewKitCollection
-kitmapUpdate orientation prevMap faceColor = 
-    let (isVisible, newViewKit) 
-            = viewKit orientation faceColor 
+updateFaceViews :: Matrix Float -> FaceViewCollection -> Color -> FaceViewCollection
+updateFaceViews orientation prevCollection faceColor = 
+    let (isVisible, newFaceView) 
+            = faceView orientation faceColor 
     in  if isVisible 
-        then insert faceColor newViewKit prevMap
-        else prevMap
+        then insert faceColor newFaceView prevCollection
+        else prevCollection
 
-topView :: Matrix Float -> ViewKitCollection
-topView orientation  =
-    foldl (kitmapUpdate orientation ) empty [Red, Green, Blue, Yellow, Orange, Purple]
+faceViews :: Matrix Float -> FaceViewCollection
+faceViews orientation  =
+    foldl (updateFaceViews orientation) empty [Red .. Purple]
 
 viewModel :: MonadWidget t m => Dynamic t (Matrix Float) -> m ()
 viewModel orientation = do
-    topMap <- mapDyn topView orientation
+    topMap <- mapDyn faceViews orientation
     listWithKey topMap showFace
     return ()
 
-view :: MonadWidget t m => Dynamic t (Matrix Float) -> m (Event t Action)
+view :: MonadWidget t m => Dynamic t (Matrix Float) -> m ()
 view orientation = 
     el "div" $ do
-        (_,ev) <-    elDynAttrNS' svgNamespace "svg" 
-                       (constDyn $  "width" =: show viewScale
-                                 <> "height" =: show viewScale
-                                 ) $ viewModel orientation
-        return never
+        (_,_) <- elDynAttrNS' svgNamespace "svg" 
+                   (constDyn $  "width" =: show viewScale
+                             <> "height" =: show viewScale
+                   ) $ viewModel orientation
+        return ()
 
-rotateModel rotationMatrix orientation = 
-    orientation `multStd2` rotationMatrix 
-
-update :: Action -> Matrix Float -> Matrix Float
+update :: TickInfo -> Matrix Float -> Matrix Float
 update _ orientation = 
-    rotateModel (zxRotationMatrix (-pi/20) ) orientation
+    orientation `multStd2` (zxRotationMatrix (rotationStep) ) 
 
 main = mainWidget $ do 
-    let initialOrientation =             zxRotationMatrix (3*pi/4) 
-                              `multStd2` yzRotationMatrix (pi/4)
-        dt = 0.1
+    let initialOrientation 
+            =            yzRotationMatrix (pi/4) 
+              `multStd2` xyRotationMatrix (atan(1/sqrt(2)))
 
-    tick <- tickLossy dt =<< liftIO getCurrentTime
-    let advanceAction = fmap (const Animate) tick
+    tick <- tickLossy  updateFrequency =<< liftIO getCurrentTime
     rec
         view orientation
-        orientation <- foldDyn update initialOrientation $ leftmost [advanceAction]
+        orientation <- foldDyn update initialOrientation tick
     return ()
