@@ -143,8 +143,8 @@ facingCamera viewPoint modelTransform =
         -- should be opposed to each other. 
     in cameraToPlane `dot` perpendicular < 0
 
-viewTransformation :: Matrix Float -> Color -> (Matrix Float, Bool)
-viewTransformation orientation faceColor = 
+faceView :: Matrix Float -> Color -> (Bool, Matrix Float)
+faceView orientation faceColor = 
     let trans2d = -1/2  -- translate center of 1x1 square face to origin.
         trans2dMatrix = translationMatrix (trans2d,trans2d,0)
 
@@ -177,13 +177,7 @@ viewTransformation orientation faceColor =
 
         -- backface elimination
         isFacingCamera = facingCamera [0,0,-1] modelTransform
-    in (modelTransform, isFacingCamera)
-
-faceView :: Matrix Float -> Color -> (Bool, Matrix Float)
-faceView orientation faceColor = 
-    let (modelTransform, isFacingCamera) 
-            = viewTransformation orientation faceColor 
-
+        
         -- scale up to svg box scale
         viewScaleMatrix = scaleMatrix viewScale
 
@@ -191,11 +185,14 @@ faceView orientation faceColor =
         viewTranslationMatrix = translationMatrix (viewScale/2, viewScale/2, 0)
 
         -- combine to get single transform from 2d face to 2d display
-        viewTransform =            modelTransform
-                        `multStd2` perspectivePrepMatrix
-                        `multStd2` perspectiveMatrix
-                        `multStd2` viewScaleMatrix
-                        `multStd2` viewTranslationMatrix
+        viewTransformations = [ modelTransform
+                              , perspectivePrepMatrix
+                              , perspectiveMatrix
+                              , viewScaleMatrix
+                              , viewTranslationMatrix
+                              ]
+
+        viewTransform =  foldl1 multStd2 viewTransformations
 
     in (isFacingCamera, viewTransform)
 
