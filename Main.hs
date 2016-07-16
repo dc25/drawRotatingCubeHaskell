@@ -219,6 +219,7 @@ viewModel orientation = do
 view :: MonadWidget t m => Dynamic t (Matrix Float) -> m ()
 view orientation = 
     el "div" $ do
+        el "h1" $ text "Rotating Cube"
         (_,_) <- elDynAttrNS' svgNamespace "svg" 
                    (constDyn $  "width" =: show viewScale
                              <> "height" =: show viewScale

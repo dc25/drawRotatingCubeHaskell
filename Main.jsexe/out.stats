@@ -7,14 +7,14 @@ depen_HCFzp6ZGqMz1lvJkHhl9BD:46586
 excep_GsT9breZyJSLZ8kkCjLGTR:4658
 ghc-prim:                35455
 ghcjs_B7KLFJ07Vte3zPHAgRIBTb:11013
-ghcjs_D7BYGeMTlMGF2My8KZzKUS:152009
+ghcjs_D7BYGeMTlMGF2My8KZzKUS:152015
 ghcjs_Kc7TQ2cEDg1F5e5cgY2Vuk:9821
 integer-gmp:             42831
-main:                    72212
+main:                    72747
 matri_682HBa36TWs8HIx1KnWQ3t:31549
 primi_293YT17zdlWL9QJgnLTQSn:2385
 refle_BP42iAL8rA7IBOuWCaV0zs:397882
-refle_IbNW0IEhD2N2cZrEG6FTBQ:477343
+refle_IbNW0IEhD2N2cZrEG6FTBQ:478364
 reftf_JOU40Nd0lxyACBtr3v80Qj:1202
 text_1ffW5NTi2SPHBcBuYSkgjk:19877
 these_6AzwGhJzfucJgGlyPQnsSR:2743
@@ -118,7 +118,7 @@ ghcjs_D7BYGeMTlMGF2My8KZzKUS
     GHCJS.DOM.JSFFI.Generated.NamedNodeMap:936
     GHCJS.DOM.JSFFI.Generated.Node:     6721
     GHCJS.DOM.JSFFI.Generated.Window:   1490
-    GHCJS.DOM.Types:                    99141
+    GHCJS.DOM.Types:                    99147
 
 ghcjs_Kc7TQ2cEDg1F5e5cgY2Vuk
     GHCJS.Marshal:                      7262
@@ -130,7 +130,7 @@ integer-gmp
     GHC.Integer.Type:                   42498
 
 main
-    Main:                               72212
+    Main:                               72747
 
 matri_682HBa36TWs8HIx1KnWQ3t
     Data.Matrix:                        31549
@@ -150,7 +150,7 @@ refle_IbNW0IEhD2N2cZrEG6FTBQ
     Reflex.Dom.Class:                   27359
     Reflex.Dom.Internal:                115117
     Reflex.Dom.Time:                    9528
-    Reflex.Dom.Widget.Basic:            325339
+    Reflex.Dom.Widget.Basic:            326360
 
 reftf_JOU40Nd0lxyACBtr3v80Qj
     Control.Monad.Ref:                  1202
@@ -193,5 +193,5 @@ vecto_FNLwpzrmeRC6Ra1RihE2cq
 
 
 
-packed metadata: 405566
+packed metadata: 405913
 
