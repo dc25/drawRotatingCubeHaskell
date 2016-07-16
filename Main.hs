@@ -86,6 +86,7 @@ transformPoints transform points =
 
 pointsToString :: [(Float,Float)] -> String
 pointsToString = concatMap (\(x,y) -> show x ++ ", " ++ show y ++ " ") 
+
 showRectangle :: MonadWidget t m => Float -> Float -> Float -> Float -> Color -> Dynamic t (Matrix Float) -> m ()
 showRectangle x0 y0 x1 y1 faceColor dFaceView = do
     let points = fromLists [[x0,y0,0,1],[x0,y1,0,1],[x1,y1,0,1],[x1,y0,0,1]]
@@ -151,12 +152,12 @@ viewTransformation orientation faceColor =
 
         -- Rotate face into position .  
         assemblies = fromList
-                        [ ( Purple ,  yzRotationMatrix (0.0) )  
-                        , ( Yellow ,  yzRotationMatrix (pi/2))  
-                        , ( Red ,     zxRotationMatrix (pi/2) )  
-                        , ( Green ,   yzRotationMatrix (-pi/2) )  
-                        , ( Blue ,    zxRotationMatrix (-pi/2) )  
-                        , ( Orange ,  yzRotationMatrix (pi) )
+                        [ (Purple , yzRotationMatrix (0.0) )  
+                        , (Yellow , yzRotationMatrix (pi/2) )  
+                        , (Red    , zxRotationMatrix (pi/2) )  
+                        , (Green  , yzRotationMatrix (-pi/2) )  
+                        , (Blue   , zxRotationMatrix (-pi/2) )  
+                        , (Orange , yzRotationMatrix (pi) )
                         ]
 
         Just assemble = DM.lookup faceColor assemblies 

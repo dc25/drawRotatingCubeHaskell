@@ -39292,7 +39292,7 @@ function h$$QZ()
   h$contazu5w3UY4chXx62LVUOUrXeRmZCDataziMapziBasezifromList);
   return h$ap_2_2_fast();
 };
-var h$$mainZCMain_bo = h$str("Main.hs:162:9-54|Just assemble");
+var h$$mainZCMain_bo = h$str("Main.hs:163:9-54|Just assemble");
 function h$$QY()
 {
   var a = h$r1;
@@ -39409,7 +39409,7 @@ function h$$QL()
   h$l2(h$c(h$$QM), h$baseZCGHCziListzizzipWith);
   return h$ap_1_1_fast();
 };
-var h$$mainZCMain_bs = h$str("Main.hs:(112,9)-(114,54)|function cross");
+var h$$mainZCMain_bs = h$str("Main.hs:(113,9)-(115,54)|function cross");
 function h$$QK()
 {
   --h$sp;
