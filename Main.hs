@@ -201,8 +201,7 @@ faceView orientation faceColor =
 
 updateFaceViews :: Matrix Float -> FaceViewCollection -> Color -> FaceViewCollection
 updateFaceViews orientation prevCollection faceColor = 
-    let (isVisible, newFaceView) 
-            = faceView orientation faceColor 
+    let (isVisible, newFaceView) = faceView orientation faceColor 
     in  if isVisible 
         then insert faceColor newFaceView prevCollection
         else prevCollection
