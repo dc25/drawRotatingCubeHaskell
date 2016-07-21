@@ -6,7 +6,7 @@ import Data.Monoid ((<>))
 import Data.Time.Clock (getCurrentTime)
 import Control.Monad.Trans (liftIO)
 
-viewScale = 500
+size = 500
 updateFrequency = 0.2
 rotationStep = pi/10
 
@@ -58,19 +58,15 @@ scale s =
                ,[ 0,  0,  0,  1 ]
                ]
 
--- translate to (0,0,1) for perspective viewing
-perspectivePrep :: Matrix Float
-perspectivePrep = translation (0,0,1)
-
 -- perspective transformation; 
 perspective :: Matrix Float
 perspective = 
     fromLists  [[ 1,  0,  0,  0 ]
                ,[ 0,  1,  0,  0 ]
                ,[ 0,  0,  1,  1 ]
-               ,[ 0,  0,  0,  0 ] ]
+               ,[ 0,  0,  1,  1 ] ]
 
--- | Namespace needed for svg elements.
+-- Namespace needed for svg elements.
 svgNamespace = Just "http://www.w3.org/2000/svg"
 
 transformPoints :: Matrix Float -> Matrix Float -> [(Float,Float)]
@@ -100,32 +96,23 @@ showFace faceColor dFaceView = do
 
 facingCamera :: [Float] -> Matrix Float -> Bool
 facingCamera viewPoint modelTransform =
-    let cross [x0,y0,z0] [x1,y1,z1] = [y0*z1 - z0*y1
-                                      ,z0*x1 - x0*z1
-                                      ,x0*y1 - y0*x1 ]
-
+    let cross [x0,y0,z0] [x1,y1,z1] = [y0*z1-z0*y1, z0*x1-x0*z1, x0*y1-y0*x1 ] 
         dot v0 v1 = sum $ zipWith (*) v0 v1
-
         vMinus = zipWith (-) 
 
-        threeUntransformedPoints = fromLists [ [0,0,0,1]   -- lower left 
-                                             , [1,0,0,1]   -- lower right 
-                                             , [0,1,0,1] ] -- upper left 
+        untransformedPoints = fromLists [ [0,0,0,1]   -- lower left 
+                                        , [1,0,0,1]   -- lower right 
+                                        , [0,1,0,1] ] -- upper left 
 
-        threeTransformedPoints = toLists $ threeUntransformedPoints `multStd2` modelTransform
-        pt00 = take 3 $ head threeTransformedPoints 
-        pt10 = take 3 $ threeTransformedPoints !! 1
-        pt01 = take 3 $ threeTransformedPoints !! 2
-
-        -- vector from lower right to lower left
-        tVec_10_00 = pt10 `vMinus` pt00  
-
-        -- vector from upper left to lower left
-        tVec_01_00 = pt01 `vMinus` pt00  
-
-        -- cross to get perpendicular pointing out from face.
-        perpendicular = tVec_10_00 `cross` tVec_01_00  
-        cameraToPlane = pt00 `vMinus` viewPoint
+        transformedPoints = toLists $ untransformedPoints `multStd2` modelTransform
+        pt00 = take 3 $ head transformedPoints         -- transformed lower left
+        pt10 = take 3 $ transformedPoints !! 1         -- transformed upper right
+        pt01 = take 3 $ transformedPoints !! 2         -- transformed upper left
+        
+        tVec_10_00 = pt10 `vMinus` pt00                -- lower right to lower left
+        tVec_01_00 = pt01 `vMinus` pt00                -- upper left to lower left
+        perpendicular = tVec_10_00 `cross` tVec_01_00  -- perpendicular to face
+        cameraToPlane = pt00 `vMinus` viewPoint        -- line of sight to face
 
         -- Perpendicular points away from surface;
         -- Camera vector points towards surface
@@ -139,21 +126,14 @@ faceView modelOrientation faceOrientation =
                          `multStd2` scale (1/2)                 -- shrink cube to fit in view.
                          `multStd2` modelOrientation            -- position the entire cube
 
-        -- backface elimination
-        isFacingCamera = facingCamera [0,0,-1] modelTransform
         
-        -- scale up to svg box scale
-        viewScaleMatrix = scale viewScale
-
-        -- move to center of svg box
-        viewTranslation = translation (viewScale/2, viewScale/2, 0)
+        isFacingCamera = facingCamera [0,0,-1] modelTransform   -- backface elimination
 
         -- combine to get single transform from 2d face to 2d display
         viewTransform =            modelTransform
-                        `multStd2` perspectivePrep
                         `multStd2` perspective
-                        `multStd2` viewScaleMatrix
-                        `multStd2` viewTranslation
+                        `multStd2` scale size                       -- scale up to svg box scale
+                        `multStd2` translation (size/2, size/2, 0)  -- move to center of svg box
 
     in (isFacingCamera, viewTransform)
 
@@ -185,16 +165,14 @@ view :: MonadWidget t m => Dynamic t (Matrix Float) -> m ()
 view modelOrientation = do
     el "h1" $ text "Rotating Cube"
     (_,_) <- elDynAttrNS' svgNamespace "svg" 
-               (constDyn $  "width" =: show viewScale
-                         <> "height" =: show viewScale
+               (constDyn $  "width" =: show size
+                         <> "height" =: show size
                ) $ viewModel modelOrientation
     return ()
 
 main = mainWidget $ do 
     let initialOrientation = xRot (pi/4) `multStd2` zRot (atan(1/sqrt(2)))
-
-        update _ modelOrientation = 
-            modelOrientation `multStd2` (yRot (rotationStep) ) 
+        update _ modelOrientation = modelOrientation `multStd2` (yRot (rotationStep) ) 
 
     tick <- tickLossy  updateFrequency =<< liftIO getCurrentTime
     rec
