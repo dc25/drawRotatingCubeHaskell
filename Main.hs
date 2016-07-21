@@ -1,10 +1,9 @@
 {-# LANGUAGE RecursiveDo #-} 
 import Reflex.Dom 
-import Data.Map as DM (Map, lookup, insert, empty)
-import Data.Matrix (Matrix, fromLists, toLists, multStd2)
-import Data.Monoid ((<>))
-import Data.Time.Clock (getCurrentTime)
-import Control.Monad.Trans (liftIO)
+import Data.Map as DM (Map, lookup, insert, empty, fromList)
+import Data.Matrix 
+import Data.Time.Clock 
+import Control.Monad.Trans 
 
 size = 500
 updateFrequency = 0.2
@@ -66,9 +65,6 @@ perspective =
                ,[ 0,  0,  1,  1 ]
                ,[ 0,  0,  1,  1 ] ]
 
--- Namespace needed for svg elements.
-svgNamespace = Just "http://www.w3.org/2000/svg"
-
 transformPoints :: Matrix Float -> Matrix Float -> [(Float,Float)]
 transformPoints transform points = 
     let result4d = points `multStd2` transform
@@ -79,10 +75,10 @@ showRectangle :: MonadWidget t m => Float -> Float -> Float -> Float -> Color ->
 showRectangle x0 y0 x1 y1 faceColor dFaceView = do
     let points = fromLists [[x0,y0,0,1],[x0,y1,0,1],[x1,y1,0,1],[x1,y0,0,1]]
         pointsToString = concatMap (\(x,y) -> show x ++ ", " ++ show y ++ " ") 
-    dAttrs <- mapDyn (\fvk -> "fill" =: show faceColor  <> 
-                              "points" =: pointsToString (transformPoints fvk points))  dFaceView
-    (el,_) <- elDynAttrNS' svgNamespace "polygon" dAttrs $ return ()
-    return ()
+    dAttrs <- mapDyn (\fvk -> DM.fromList [ ("fill", show faceColor)
+                                          , ("points", pointsToString (transformPoints fvk points))
+                                          ] ) dFaceView
+    elDynAttrSVG "polygon" dAttrs $ return ()
 
 showUnitSquare :: MonadWidget t m => Color -> Float -> Dynamic t (Matrix Float) -> m ()
 showUnitSquare faceColor margin dFaceView = 
@@ -164,11 +160,9 @@ viewModel modelOrientation = do
 view :: MonadWidget t m => Dynamic t (Matrix Float) -> m ()
 view modelOrientation = do
     el "h1" $ text "Rotating Cube"
-    (_,_) <- elDynAttrNS' svgNamespace "svg" 
-               (constDyn $  "width" =: show size
-                         <> "height" =: show size
-               ) $ viewModel modelOrientation
-    return ()
+    elDynAttrSVG "svg" 
+        (constDyn $  DM.fromList [ ("width",  show size), ("height", show size) ]) 
+        $ viewModel modelOrientation
 
 main = mainWidget $ do 
     let initialOrientation = xRot (pi/4) `multStd2` zRot (atan(1/sqrt(2)))
@@ -178,4 +172,9 @@ main = mainWidget $ do
     rec
         view modelOrientation
         modelOrientation <- foldDyn update initialOrientation tick
+    return ()
+
+-- At end because Rosetta Code site incorrectly displays unmatched quotes.
+elDynAttrSVG a2 a3 a4 = do 
+    elDynAttrNS' (Just "http://www.w3.org/2000/svg") a2 a3 a4
     return ()
